@@ -544,9 +544,14 @@ with one key):
    Files come back at their original paths:
 
    ```sh
+   sudo mkdir -m 700 /root/restore
    age -d -i identity.txt btcvm-….tar.age | sudo tar -xzf - -C /root/restore
    sudo cp -a /root/restore/btcvm/. /
    sudo rm -rf /root/restore
+   # The same owners by name, whatever the new server's user IDs are:
+   sudo chown -R btcvm-node: /var/lib/btcvm-node
+   sudo chown -R btcvm-signer: /var/lib/btcvm-signer
+   sudo chown -R bitcoind: /var/lib/bitcoind
    ```
 
    (Decrypt on your own computer and copy the tarball over if you would
