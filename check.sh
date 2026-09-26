@@ -197,7 +197,7 @@ if [[ $ROLE == signer ]]; then
       bad "$BRIDGE_BIN signer-setup check did not run: sudo -u $SIGNER_USER -H $BRIDGE_BIN signer-setup check -dir $SIGNER_DIR"
     fi
 
-    if ufw status 2>/dev/null | grep -q "^$SIGNER_PORT/tcp .*ALLOW"; then
+    if grep -q "^$SIGNER_PORT/tcp .*ALLOW" <<<"$(ufw status 2>/dev/null)"; then
       ok "firewall lets the coordinator reach port $SIGNER_PORT ($(ufw status | awk -v p="$SIGNER_PORT/tcp" '$1 == p {print $NF}' | sort -u | tr '\n' ' '))"
     else
       wrn "no firewall rule lets the coordinator reach port $SIGNER_PORT: re-run install.sh with --signer-allow-from COORDINATOR_IP"
@@ -229,7 +229,7 @@ if [[ $(timedatectl show -p NTPSynchronized --value 2>/dev/null || true) == yes 
 else
   wrn "clock not synchronised: timedatectl status"
 fi
-if ufw status 2>/dev/null | grep -q '^Status: active'; then ok "firewall on"; else wrn "firewall (ufw) is off"; fi
+if grep -q '^Status: active' <<<"$(ufw status 2>/dev/null)"; then ok "firewall on"; else wrn "firewall (ufw) is off"; fi
 if [[ $(systemctl is-enabled unattended-upgrades.service 2>/dev/null || true) == enabled ]]; then
   ok "automatic security updates on"
 else
@@ -237,7 +237,9 @@ else
 fi
 [[ -f /var/run/reboot-required ]] && wrn "a reboot is pending (usually a kernel update); plan one"
 if command -v sshd >/dev/null 2>&1; then
-  if sshd -T 2>/dev/null | grep -qi '^passwordauthentication no'; then
+  # Not "sshd -T | grep -q": grep quits at the match, sshd dies of SIGPIPE,
+  # and pipefail reports the check as failed.
+  if grep -qi '^passwordauthentication no' <<<"$(sshd -T 2>/dev/null)"; then
     ok "SSH: password login off"
   else
     wrn "SSH: password login is on; add a key and re-run install.sh"

@@ -223,7 +223,7 @@ cmd_verify() {
       warn "signer.key is present but not 64 hex characters"
     fi
   fi
-  if find "$root" -name signing-log.json -type f | grep -q .; then
+  if [[ -n $(find "$root" -name signing-log.json -type f) ]]; then
     info "signing log present"
   fi
   info "files:"

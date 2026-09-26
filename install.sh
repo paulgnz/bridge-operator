@@ -277,7 +277,7 @@ users_and_dirs() {
 
 install_go() {
   if ((TEST_ONLY)); then return; fi
-  if /usr/local/go/bin/go version 2>/dev/null | grep -q "go$GO_VERSION "; then
+  if grep -q "go$GO_VERSION " <<<"$(/usr/local/go/bin/go version 2>/dev/null)"; then
     info "Go $GO_VERSION already installed"
     return
   fi
@@ -785,7 +785,7 @@ EOF
     fi
     ((TEST_ONLY)) || systemctl try-reload-or-restart ssh.service
   fi
-  if ! ((DRY_RUN)) && sshd -T 2>/dev/null | grep -qi '^passwordauthentication yes'; then
+  if ! ((DRY_RUN)) && grep -qi '^passwordauthentication yes' <<<"$(sshd -T 2>/dev/null)"; then
     warn "another file in /etc/ssh/sshd_config.d still turns password login on; check it"
   fi
 }
