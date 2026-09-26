@@ -262,7 +262,7 @@ users_and_dirs() {
   # Binaries are owned by root, so no service can change what it runs.
   run install -d -m 0755 -o root -g root /opt/metal "$OPT_DIR" "$OPT_DIR/bin" "$PLUGIN_DIR"
   run install -d -m 0750 -o "$BUILD_USER" -g "$BUILD_USER" "$BUILD_HOME" "$BUILD_HOME/src"
-  run install -d -m 0750 -o "$NODE_USER" -g "$NODE_USER" "$NODE_STATE" "$NODE_STATE/logs"
+  run install -d -m 0750 -o "$NODE_USER" -g "$NODE_USER" "$NODE_STATE" "$NODE_STATE/logs" "$NODE_STATE/workdir"
   run install -d -m 0700 -o "$NODE_USER" -g "$NODE_USER" "$CHAIN_CONFIG_DIR" "$CHAIN_CONFIG_DIR/$L1_CHAIN_ID" \
     "$NODE_STATE/chaindata" "$NODE_STATE/chainlogs"
   run install -d -m 0755 -o root -g root "$CONF_DIR"
@@ -592,7 +592,11 @@ Type=simple
 User=$NODE_USER
 Group=$NODE_USER
 Environment=HOME=$NODE_STATE
-WorkingDirectory=$NODE_STATE
+# An empty directory of its own, never the data dir: the L1 plugin inherits
+# metalgo's working directory, with no HOME, and its embedded btcd (before
+# the fix in the VM repos) deleted ./db there at start: with the data dir as
+# working directory, metalgo's database.
+WorkingDirectory=$NODE_STATE/workdir
 # Syncs only the P-Chain of the primary network, and tracks the L1's subnet.
 # Its APIs (and the L1's JSON-RPC) listen on localhost only; peers reach it on
 # the staking port.

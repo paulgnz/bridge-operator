@@ -76,6 +76,8 @@ unit=$UNITS/$NODE_SERVICE.service
 check "node unit tracks the L1 subnet" has "$unit" "--track-subnets=$L1_SUBNET_ID"
 check "node unit: partial sync" has "$unit" "--partial-sync-primary-network=true"
 check "node unit: APIs on localhost" has "$unit" "--http-host=127.0.0.1"
+check "node unit: working directory isn't the data dir" has "$unit" "^WorkingDirectory=$NODE_STATE/workdir$"
+check "the working directory exists, the node user's" owner_mode "$NODE_STATE/workdir" "$NODE_USER 750"
 check "node unit: sandboxed" has "$unit" "ProtectSystem=strict"
 check "node unit: empty capability set" has "$unit" "^CapabilityBoundingSet=$"
 check "install.conf records the role" has /etc/bridge-operator/install.conf "^ROLE=node$"
