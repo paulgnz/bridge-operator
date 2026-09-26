@@ -138,13 +138,11 @@ Stated plainly, as of this writing:
   loss. This is the weakness this repository exists to fix.
 - **This repository brings in independent signers.** The ceremony
   tooling (`signer-setup`) is built, and a signer set up here can take
-  part in it today. How your key becomes part of the *live* peg is the
-  maintainers' call, and has a gap you should know about: the bridge
-  cannot yet move the locked coins to a new signer set (key rotation is
-  the next piece of work). Until it can, a fresh key made on your
-  machine can join a new signer set but not the live one, and the
-  alternative, importing one of the existing keys, is weaker, because
-  those keys were once stored together.
+  part in it today. On BTCVM a fresh key made on your machine joins the
+  *live* peg through a **key rotation** (section 6.7): the coordinator
+  assembles a new signer set with your key in it, the old set's signers
+  move every coin to it, and the old keys retire. DogecoinVM doesn't have
+  rotation yet.
 - **The validator path is not ready.** Your node follows the L1 but
   does not validate it (section 14).
 - **This repository is new.** The installer has been exercised in
@@ -410,6 +408,75 @@ set that includes you. Before that:
 
 Once live, watch `journalctl -u btcvm-signer -f` for the first few
 requests: each is logged as `signed ...` or `refused ...: reason`.
+
+### 6.7 Joining the live peg: key rotation (BTCVM)
+
+The peg's address is built from its signers' keys, so a new signer joins
+by a **rotation**: a new signer set that includes you, to which the old
+set's signers move every coin. `docs/ROTATION.md` in the bridge's
+repository is the full procedure; your part is:
+
+1. **Set up and sync** as above (6.1–6.4), then make your key and card:
+   `sudo -u btcvm-signer btcvm signer-setup init`. Send `card.json` to the
+   coordinator. It holds public information only.
+2. **Receive the new `signers.json`** and join it once the fingerprint is
+   confirmed on a call:
+   `sudo -u btcvm-signer btcvm signer-setup join -signers signers.json -fingerprint FINGERPRINT`.
+   `join` shows the set it replaces. Check it's the live one (its peg
+   address is on the site).
+3. **Re-run the installer** to start the signer service, then
+   `sudo ./check.sh`. Tell the coordinator you're up.
+4. **Watch the move.** Your log shows nothing until the coordinator
+   switches over; then the old set's coins arrive at the new addresses. The
+   first deposit or withdrawal after that is signed by you.
+
+**If your set is the one being replaced**, you become a **retired
+signer**. Run the same `join`, in your existing directory, with the
+**new** `signers.json`: it recognises your old key, says you're joining
+retired, and keeps a copy of the set you ran with. Restart your service.
+From then on your signer signs nothing but moves of the old set's coins
+to the new set, and only the moves its own nodes agree with. **Keep it
+running**, and keep your key's backups, until the maintainers announce
+that the old addresses are retired: payments that still arrive at them
+are moved and credited only while you run.
+
+### 6.8 A signer's job, on one page
+
+- **Keep it running.** The service, its Bitcoin Core and its Metal node,
+  with `check.sh` clean. The bridge needs a threshold of signers up to
+  move anything.
+- **Keep the key safe.** It never leaves the server except in encrypted
+  backups (section 9). Never paste it anywhere, never run commands you
+  were sent without reading them, and never share tokens or passwords.
+- **Answer alerts.** A `refused ...` in the log is your signer protecting
+  the peg: find out why before anything else. Pause first, investigate
+  second (section 11).
+- **Confirm every fingerprint by voice.** Anything that changes the signer
+  set or its policy comes with a fingerprint. Read it out on a call. It is
+  your consent.
+- **Approve refunds deliberately.** Only add a line to your approvals file
+  (15, Refund approvals) for a refund you have checked yourself.
+- **Upgrade when asked, after reading what changed** (section 10).
+- **Tell the coordinator** before planned downtime, and at once if you
+  suspect your server is compromised.
+
+### 6.9 Onboarding a new signer (for the coordinator)
+
+1. **Agree terms and contact.** Who they are, how you reach each other in
+   an incident, day and night. Share `GUIDE.md` and `docs/ROTATION.md`.
+2. **They set up** (6.1–6.4) on their own server, with their own cloud
+   account and provider. Different from yours is the point.
+3. **Check them:** their `check.sh` output is clean; their backups and a
+   restore drill are done (section 9); monitoring is set (section 8).
+4. **Collect cards** from every signer of the new set, and assemble it
+   with `-previous` pointing at the live set (`docs/ROTATION.md`, step 2).
+   Choose the threshold so no single operator, you included, can move
+   funds.
+5. **Confirm the fingerprint** with every signer, old and new, on one call.
+6. **Rotate** (`docs/ROTATION.md`, steps 4–8), then do a small deposit and
+   withdrawal on the new set before announcing it.
+7. **Afterwards:** keep the retired signers up; update the site's and
+   wallets' published fingerprint; record who holds which key.
 
 ## 7. Verification
 

@@ -39,7 +39,9 @@ sudo ./backup.sh setup age1YOUR_PUBLIC_KEY                       # encrypted bac
 A signer then goes through the key ceremony with the coordinator and the
 other signers (`btcvm signer-setup init`, send your card, verify the
 fingerprint, `join`) and re-runs the installer to start the signer service.
-[GUIDE.md](GUIDE.md) covers all of it, step by step.
+[GUIDE.md](GUIDE.md) covers all of it, step by step: on BTCVM a new
+signer joins the live peg through a key rotation (GUIDE.md 6.7), and 6.8
+is a signer's job on one page.
 
 ## What's here
 
