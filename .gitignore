@@ -1,0 +1,31 @@
+# Secrets. Never commit these; scripts/secretscan and .githooks enforce it.
+signers*.json
+cosigners*.json
+signing-log*.json
+card.json
+deposits.json
+p-chain-key.json
+refund-approvals
+paused.json
+*.key
+*.pem
+*.p12
+*.wif
+.env
+.env.*
+*.env
+# ...except the per-chain settings, which hold only public values (and are
+# still scanned line by line).
+!chains/*.env
+telegram-token
+telegram-chat
+rpc-password
+secrets/
+update-key*
+*sparkle*key*
+# age identities and encrypted backups
+*identity*.txt
+*.tar.age
+
+# Test output
+/test/out/
