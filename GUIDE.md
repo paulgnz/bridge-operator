@@ -659,6 +659,7 @@ Common failures and what they mean:
 | signer answered without authentication | the signer set has no coordinator key | stop the signer and tell the coordinator |
 | key file mode or owner wrong | someone changed it | re-run the installer, and find out who |
 | clock not synchronised | time sync is off | `timedatectl status`; the signer will refuse requests |
+| the install stops with `SIGILL in blst_cgo_init` | the CPU lacks the ADX/BMI2 instructions metalgo's BLS library uses (very old hardware, or an emulator) | re-run as `sudo CGO_CFLAGS="-O -D__BLST_PORTABLE__" ./install.sh ...` |
 
 ## 13. What never to do
 

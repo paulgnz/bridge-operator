@@ -1,0 +1,28 @@
+name: lint
+
+# bash -n and shellcheck on every script, the secret scanner's own tests,
+# and the four dry runs (a dry run needs no root and changes nothing).
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: bash -n, shellcheck, go vet and test
+        run: make lint
+      - name: Dry runs
+        run: |
+          for chain in btcvm dogevm; do
+            for role in node signer; do
+              ./install.sh --chain "$chain" --role "$role" --dry-run >/dev/null
+            done
+          done

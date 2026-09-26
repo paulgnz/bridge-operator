@@ -129,10 +129,13 @@ new_secret() {
 }
 
 # The build user's environment: Go from /usr/local/go, never a downloaded
-# toolchain, and caches in its own home.
+# toolchain, and caches in its own home. CGO_CFLAGS passes through: on a CPU
+# without ADX/BMI2 (very old x86_64, or an emulator), metalgo's BLS library
+# (blst) needs CGO_CFLAGS="-O -D__BLST_PORTABLE__", or it dies with SIGILL.
 build_env() {
   runuser -u "$BUILD_USER" -- env HOME="$BUILD_HOME" PATH=/usr/local/go/bin:/usr/bin:/bin \
-    GOTOOLCHAIN=local GOPATH="$BUILD_HOME/go" GOCACHE="$BUILD_HOME/.cache/go-build" "$@"
+    GOTOOLCHAIN=local GOPATH="$BUILD_HOME/go" GOCACHE="$BUILD_HOME/.cache/go-build" \
+    ${CGO_CFLAGS:+CGO_CFLAGS="$CGO_CFLAGS"} "$@"
 }
 as_build() {
   if ((DRY_RUN)); then
@@ -220,7 +223,7 @@ preflight() {
   local want=$MIN_DISK_GB_NODE
   is_signer && want=$MIN_DISK_GB_SIGNER
   local free_gb
-  free_gb=$(df -P -BG /var/lib 2>/dev/null | awk 'NR==2 {sub("G","",$4); print $4}')
+  free_gb=$(df -P -BG /var/lib 2>/dev/null | awk 'NR==2 {sub("G","",$4); print $4}' || true)
   if [[ -n $free_gb && $free_gb -lt $want ]]; then
     warn "only ${free_gb} GB free under /var/lib; a $CHAIN_TITLE $ROLE needs about $want GB or more (GUIDE.md, Requirements)"
   fi
@@ -263,7 +266,7 @@ users_and_dirs() {
   run install -d -m 0700 -o "$NODE_USER" -g "$NODE_USER" "$CHAIN_CONFIG_DIR" "$CHAIN_CONFIG_DIR/$L1_CHAIN_ID" \
     "$NODE_STATE/chaindata" "$NODE_STATE/chainlogs"
   run install -d -m 0755 -o root -g root "$CONF_DIR"
-  run install -d -m 0700 -o root -g root "$BACKUP_DIR"
+  run install -d -m 0700 -o root -g root "$BACKUP_DIR" "$DL_DIR"
   if is_signer; then
     run install -d -m 0750 -o "$COIN_USER" -g "$COIN_USER" "$COIN_DATA"
     # The signer's directory: its key, signer set, signing log. Only the
@@ -279,11 +282,12 @@ install_go() {
     return
   fi
   log "Go $GO_VERSION (SHA-256 pinned)"
-  run curl -fsSLo /tmp/bridge-operator-go.tgz "$GO_URL"
-  verify_sha256 /tmp/bridge-operator-go.tgz "$GO_SHA256"
+  local tgz=$DL_DIR/go.tgz
+  run curl -fsSLo "$tgz" "$GO_URL"
+  verify_sha256 "$tgz" "$GO_SHA256"
   run rm -rf /usr/local/go
-  run tar -C /usr/local -xzf /tmp/bridge-operator-go.tgz
-  run rm -f /tmp/bridge-operator-go.tgz
+  run tar -C /usr/local -xzf "$tgz"
+  run rm -f "$tgz"
 }
 
 # checkout_pinned DIR REPO REF COMMIT [DEPTH]: DIR holds REPO at exactly
@@ -293,9 +297,9 @@ checkout_pinned() {
   [[ -n ${5:-} ]] && depth=(--depth "$5")
   if [[ -d $dir/.git ]]; then
     as_build git -C "$dir" remote set-url origin "$repo"
-    as_build git -C "$dir" fetch -q "${depth[@]}" origin "$ref"
+    as_build git -C "$dir" fetch -q ${depth[@]+"${depth[@]}"} origin "$ref"
   else
-    as_build git clone -q "${depth[@]}" --branch "$ref" "$repo" "$dir"
+    as_build git clone -q ${depth[@]+"${depth[@]}"} --branch "$ref" "$repo" "$dir"
   fi
   if ! ((DRY_RUN)) && ! runuser -u "$BUILD_USER" -- git -C "$dir" cat-file -e "$commit^{commit}" 2>/dev/null; then
     as_build git -C "$dir" fetch -q origin "$commit"
@@ -387,14 +391,14 @@ install_coin() {
     return
   fi
   log "$COIN_NAME $COIN_VERSION (SHA-256 pinned)"
-  local tgz=/tmp/bridge-operator-$COIN_DAEMON.tgz
+  local tgz=$DL_DIR/$COIN_DAEMON.tgz
   run curl -fsSLo "$tgz" "$COIN_URL"
   verify_sha256 "$tgz" "$COIN_SHA256"
-  run rm -rf "/tmp/$COIN_TAR_DIR"
-  run tar -C /tmp -xzf "$tgz"
-  run chown -R root:root "/tmp/$COIN_TAR_DIR"
+  run rm -rf "${DL_DIR:?}/$COIN_TAR_DIR"
+  run tar -C "$DL_DIR" -xzf "$tgz"
+  run chown -R root:root "$DL_DIR/$COIN_TAR_DIR"
   run rm -rf "$COIN_HOME"
-  run mv "/tmp/$COIN_TAR_DIR" "$COIN_HOME"
+  run mv "$DL_DIR/$COIN_TAR_DIR" "$COIN_HOME"
   run rm -f "$tgz"
   COIN_BIN_CHANGED=1
 }
@@ -732,7 +736,7 @@ firewall() {
   run ufw allow "$METAL_STAKING_PORT/tcp" comment 'Metal peers (staking port)'
   if is_signer; then
     run ufw allow "$COIN_P2P_PORT/tcp" comment "$COIN_NAME peers"
-    for a in "${ALLOW_FROM[@]}"; do
+    for a in ${ALLOW_FROM[@]+"${ALLOW_FROM[@]}"}; do
       run ufw allow from "$a" to any port "$SIGNER_PORT" proto tcp comment 'peg signer: coordinator'
     done
   fi
@@ -820,7 +824,7 @@ record_install() {
 CHAIN=$CHAIN
 ROLE=$ROLE
 PUBLIC_IP_OVERRIDE=$PUBLIC_IP_OVERRIDE
-SIGNER_ALLOW_FROM="${ALLOW_FROM[*]}"
+SIGNER_ALLOW_FROM="${ALLOW_FROM[*]:-}"
 BRIDGE_COMMIT=$BRIDGE_COMMIT
 METALGO_VERSION=$METALGO_VERSION
 EOF

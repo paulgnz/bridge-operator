@@ -205,7 +205,7 @@ cmd_verify() {
   [[ -f $root/MANIFEST.json ]] || die "no MANIFEST.json: not a bridge-operator backup"
   local sha=sha256sum
   command -v sha256sum >/dev/null || sha='shasum -a 256'
-  if ! (cd "$root" && jq -r .sha256 MANIFEST.json | $sha -c --quiet -); then
+  if ! (cd "$root" && jq -j .sha256 MANIFEST.json | $sha -c --quiet -); then
     die "some files do not match the manifest"
   fi
   log "decrypted and every file matches its manifest"

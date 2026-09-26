@@ -23,6 +23,8 @@ METALGO_BIN=/opt/metal/${METALGO_VERSION}/metalgo
 CONF_DIR=/etc/bridge-operator
 INSTALL_CONF=$CONF_DIR/install.conf
 BACKUP_DIR=/var/backups/bridge-operator
+# Downloads land here (root only), never in a shared /tmp.
+DL_DIR=/var/cache/bridge-operator
 BUILD_USER=bridge-build
 BUILD_HOME=/var/lib/bridge-build
 METAL_HTTP_PORT=9650      # localhost only
