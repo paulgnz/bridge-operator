@@ -659,6 +659,7 @@ Common failures and what they mean:
 |---|---|---|
 | a service is failed | a crash, or the disk is full | `journalctl -u NAME -n 100`; `df -h` |
 | P-Chain or L1 not synced after hours | no peers (firewall), or disk | check port 9651 is open; `journalctl -u btcvm-node` |
+| "L1 still bootstrapping" for over an hour, with the P-Chain synced | the node can't get the L1's blocks from its validator | check `info.peers` lists the validator (section 1's NodeID); send `/var/lib/btcvm-node/logs/<chain ID>.log` to the maintainers |
 | coin daemon's newest block is old | a slow block (normal now and then), or no peers | wait one more check; `getconnectioncount` |
 | signer not answering | the service is stopped, or its nodes were down when it started (it exits, and systemd starts it again every few seconds) | `systemctl status btcvm-signer`; `journalctl -u btcvm-signer -n 50` |
 | signer answered without authentication | the signer set has no coordinator key | stop the signer and tell the coordinator |

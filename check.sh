@@ -77,7 +77,7 @@ else
   peers=$(metal_call info info.peers | jq -r '.result.numPeers // 0' 2>/dev/null || echo 0)
   if [[ ${peers:-0} -gt 0 ]]; then ok "$peers peers"; else wrn "no peers yet"; fi
 
-  p_boot=$(metal_call info info.isBootstrapped '{"chain":"P"}' | jq -r '.result.isBootstrapped // empty' 2>/dev/null || true)
+  p_boot=$(metal_call info info.isBootstrapped '{"chain":"P"}' | jq -r '.result.isBootstrapped | tostring' 2>/dev/null || true)
   if [[ $p_boot == true ]]; then
     ok "P-Chain synced"
   else
@@ -85,7 +85,7 @@ else
   fi
 
   l1_reply=$(metal_call info info.isBootstrapped "{\"chain\":\"$L1_CHAIN_ID\"}" || true)
-  l1_boot=$(jq -r '.result.isBootstrapped // empty' <<<"$l1_reply" 2>/dev/null || true)
+  l1_boot=$(jq -r '.result.isBootstrapped | tostring' <<<"$l1_reply" 2>/dev/null || true)
   if [[ $l1_boot == true ]]; then
     ok "$CHAIN_TITLE L1 bootstrapped ($L1_CHAIN_ID)"
   elif [[ $l1_boot == false ]]; then
