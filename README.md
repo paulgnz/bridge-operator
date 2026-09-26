@@ -29,7 +29,7 @@ on the signer's machine, as the signer's own user.
 On a fresh Ubuntu 24.04 x86_64 server, with your SSH key installed:
 
 ```sh
-sudo git clone <this repository's URL> /opt/bridge-operator && cd /opt/bridge-operator
+sudo git clone https://github.com/paulgnz/bridge-operator /opt/bridge-operator && cd /opt/bridge-operator
 sudo ./install.sh --chain btcvm --role signer --dry-run | less   # see every action first
 sudo ./install.sh --chain btcvm --role signer                    # or: --chain dogevm, --role node
 sudo ./check.sh                                                  # sync progress and health

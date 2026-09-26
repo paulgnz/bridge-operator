@@ -214,7 +214,7 @@ the other signers to confirm a fingerprint.
 ### 6.2 Get this repository
 
 ```sh
-sudo git clone <this repository's URL> /opt/bridge-operator
+sudo git clone https://github.com/paulgnz/bridge-operator /opt/bridge-operator
 cd /opt/bridge-operator
 git log -1 --format='%H %s'
 ```

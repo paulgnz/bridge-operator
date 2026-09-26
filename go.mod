@@ -1,4 +1,4 @@
-module github.com/MetalBlockchain/bridge-operator
+module github.com/paulgnz/bridge-operator
 
 // Only the secret scanner (scripts/secretscan) is Go; it uses the standard
 // library alone.
