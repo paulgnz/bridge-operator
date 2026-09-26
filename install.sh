@@ -599,6 +599,10 @@ WorkingDirectory=$NODE_STATE
 ExecStart=$METALGO_BIN --network-id=mainnet --partial-sync-primary-network=true --track-subnets=$L1_SUBNET_ID --data-dir=$NODE_STATE --log-dir=$NODE_STATE/logs --plugin-dir=$PLUGIN_DIR --chain-config-dir=$CHAIN_CONFIG_DIR --http-host=127.0.0.1 --http-port=$METAL_HTTP_PORT --staking-port=$METAL_STAKING_PORT --public-ip=$PUBLIC_IP
 Restart=on-failure
 RestartSec=10
+# SIGTERM to metalgo only: it shuts each chain down in order, and the chain's
+# plugin closes its database. Sent to the whole unit, it killed the plugin
+# first and lost accepted blocks.
+KillMode=mixed
 TimeoutStopSec=120
 LimitNOFILE=65536
 
